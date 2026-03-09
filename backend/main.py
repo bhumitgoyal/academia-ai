@@ -268,11 +268,15 @@ Generate comprehensive answers following the JSON schema exactly.
         logger.error(f"JSON parse error: {e}\nRaw: {raw_text[:500]}")
         raise HTTPException(status_code=500, detail=f"LLM returned malformed JSON: {str(e)}")
     except openai.OpenAIError as e:
-        logger.error(f"OpenAI API error: {e}")
-        raise HTTPException(status_code=500, detail=f"API error: {str(e)}")
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(f"OpenAI API error: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"API error: {str(e)}. Cause: {str(e.__cause__) if e.__cause__ else 'unknown'}")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(f"Unexpected error: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"{str(e)}. Cause: {str(e.__cause__) if e.__cause__ else 'unknown'}")
 
 
 @app.post("/api/execute")
@@ -387,3 +391,21 @@ Return JSON for a SINGLE answer object matching this schema:
 @app.get("/api/health")
 async def health():
     return {"status": "healthy", "piston_api": PISTON_API}
+
+
+@app.get("/api/debug-openai")
+async def debug_openai():
+    """Debug endpoint to test OpenAI connectivity."""
+    import traceback
+    if not client:
+        return {"status": "error", "detail": "OpenAI client not initialized"}
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "Say hello in 5 words."}],
+            max_tokens=20
+        )
+        return {"status": "ok", "response": response.choices[0].message.content}
+    except Exception as e:
+        tb = traceback.format_exc()
+        return {"status": "error", "detail": str(e), "cause": str(e.__cause__), "traceback": tb}
