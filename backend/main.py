@@ -38,7 +38,13 @@ app.add_middleware(
 )
 
 # OpenAI client — reads OPENAI_API_KEY from environment
-client = openai.OpenAI()
+try:
+    client = openai.OpenAI()
+    logger.info("Successfully initialized OpenAI client.")
+except Exception as e:
+    logger.error(f"Failed to initialize OpenAI client: {e}")
+    client = None
+
 
 PISTON_API = "https://emkc.org/api/v2/piston"
 
@@ -176,6 +182,9 @@ async def generate_assessment(
     try:
         messages = []
         user_content = []
+
+        if not client:
+            raise HTTPException(status_code=500, detail="OpenAI API key is missing or invalid on the server.")
 
         # Build context string
         context = f"""
@@ -338,6 +347,9 @@ async def regenerate_answer(
         "standard": "Standard depth — cover all key aspects thoroughly.",
         "detailed": "Extremely detailed — include derivations, edge cases, multiple approaches, comparisons.",
     }.get(tone, "standard")
+
+    if not client:
+        raise HTTPException(status_code=500, detail="OpenAI API key is missing or invalid on the server.")
 
     prompt = f"""
 Subject: {subject}
