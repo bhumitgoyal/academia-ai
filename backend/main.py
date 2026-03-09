@@ -38,10 +38,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# OpenAI client — reads OPENAI_API_KEY from environment
+# OpenAI async client — reads OPENAI_API_KEY from environment
+# Using AsyncOpenAI because the sync client's httpx transport fails on Vercel serverless
 try:
-    client = openai.OpenAI(timeout=55.0)
-    logger.info("Successfully initialized OpenAI client.")
+    client = openai.AsyncOpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        timeout=55.0,
+    )
+    logger.info("Successfully initialized AsyncOpenAI client.")
 except Exception as e:
     logger.error(f"Failed to initialize OpenAI client: {e}")
     client = None
@@ -248,7 +252,7 @@ Generate comprehensive answers following the JSON schema exactly.
 
         logger.info(f"Sending request to OpenAI for student: {student_name}")
 
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
             response_format={"type": "json_object"},
@@ -405,7 +409,7 @@ Return JSON for a SINGLE answer object matching this schema:
 }}
 """
     try:
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
