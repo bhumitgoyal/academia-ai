@@ -39,7 +39,7 @@ app.add_middleware(
 
 # OpenAI client — reads OPENAI_API_KEY from environment
 try:
-    client = openai.OpenAI()
+    client = openai.OpenAI(timeout=55.0)
     logger.info("Successfully initialized OpenAI client.")
 except Exception as e:
     logger.error(f"Failed to initialize OpenAI client: {e}")
