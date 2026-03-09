@@ -4,6 +4,7 @@ import IntakeStep from './components/IntakeStep'
 import ProcessingStep from './components/ProcessingStep'
 import OutputView from './components/OutputView'
 import Header from './components/Header'
+import { apiUrl } from './api/client'
 
 export default function App() {
   const [step, setStep] = useState('intake') // intake | processing | output
@@ -64,7 +65,7 @@ export default function App() {
         fd.append('text_content', formData.textContent)
       }
 
-      const resp = await fetch('/api/generate', { method: 'POST', body: fd })
+      const resp = await fetch(apiUrl('/api/generate'), { method: 'POST', body: fd })
       if (!resp.ok) {
         let errorMsg = 'Generation failed'
         try {

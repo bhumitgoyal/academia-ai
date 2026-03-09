@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Play, Loader2, Copy, Check } from 'lucide-react'
+import { apiUrl } from '../api/client'
 
 const LANG_COLORS = {
   python: '#3b82f6',
@@ -32,7 +33,7 @@ export default function Terminal({ snippet, questionNumber }) {
     setRunning(true)
     setOutput(null)
     try {
-      const resp = await fetch('/api/execute', {
+      const resp = await fetch(apiUrl('/api/execute'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language: lang, code: snippet.code, stdin: '' })

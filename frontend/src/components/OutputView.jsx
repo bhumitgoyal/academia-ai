@@ -4,6 +4,7 @@ import AnswerSheetPreview from './AnswerSheetPreview'
 import Terminal from './Terminal'
 import UMLDiagram from './UMLDiagram'
 import LaTeXViewer from './LaTeXViewer'
+import { apiUrl } from '../api/client'
 
 const TABS = [
   { id: 'preview', label: 'Answer Sheet', icon: FileText },
@@ -40,7 +41,7 @@ export default function OutputView({ result, setResult, onReset, formData }) {
       fd.append('student_name', metadata.student_name)
       fd.append('registration_number', metadata.registration_number)
 
-      const resp = await fetch('/api/regenerate-answer', { method: 'POST', body: fd })
+      const resp = await fetch(apiUrl('/api/regenerate-answer'), { method: 'POST', body: fd })
       if (!resp.ok) throw new Error('Regeneration failed')
       const newAnswer = await resp.json()
 
