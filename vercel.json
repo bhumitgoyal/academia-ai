@@ -5,7 +5,8 @@
       "src": "backend/main.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb"
+        "maxLambdaSize": "15mb",
+        "maxDuration": 60
       }
     },
     {
@@ -25,10 +26,5 @@
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }
-  ],
-  "functions": {
-    "backend/main.py": {
-      "maxDuration": 60
-    }
-  }
+  ]
 }
