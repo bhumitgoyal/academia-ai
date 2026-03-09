@@ -13,7 +13,7 @@ const TABS = [
   { id: 'summary', label: 'Summary', icon: BarChart3 },
 ]
 
-export default function OutputView({ result, onReset, formData }) {
+export default function OutputView({ result, setResult, onReset, formData }) {
   const [activeTab, setActiveTab] = useState('preview')
   const [regenerating, setRegenerating] = useState(null)
   const [toneMap, setToneMap] = useState({})
@@ -41,12 +41,15 @@ export default function OutputView({ result, onReset, formData }) {
       fd.append('registration_number', metadata.registration_number)
 
       const resp = await fetch('/api/regenerate-answer', { method: 'POST', body: fd })
+      if (!resp.ok) throw new Error('Regeneration failed')
       const newAnswer = await resp.json()
 
-      // Patch result in-place
-      result.questions[qi].answer = newAnswer
-      // Force re-render via a shallow update trick
-      window.dispatchEvent(new Event('answer-regenerated'))
+      // Update result immutably via parent setter
+      setResult(prev => {
+        const updated = { ...prev, questions: [...prev.questions] }
+        updated.questions[qi] = { ...updated.questions[qi], answer: newAnswer }
+        return updated
+      })
     } catch (err) {
       console.error('Regeneration failed:', err)
     } finally {

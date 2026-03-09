@@ -1,24 +1,21 @@
 """
-AcademiaAI - Assessment Maker Backend
-FastAPI server with Claude API integration, file parsing, and Piston code execution
+AcademiaAI — Assessment Maker Backend
+FastAPI server with OpenAI GPT-4o integration, file parsing, and Piston code execution.
+Built by Bhumit Goyal — github.com/bhumitgoyal
 """
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 import openai
-import base64
 import json
 import httpx
-import asyncio
-import tempfile
 import os
 import io
 from pypdf import PdfReader
 import re
-from pathlib import Path
 import logging
 from dotenv import load_dotenv
 
@@ -27,11 +24,19 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AcademiaAI Assessment Maker", version="1.0.0")
+app = FastAPI(
+    title="AcademiaAI Assessment Maker",
+    version="1.0.0",
+    description="AI-powered assessment answer generator by Bhumit Goyal",
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        os.getenv("FRONTEND_URL", ""),
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,6 +55,8 @@ PISTON_API = "https://emkc.org/api/v2/piston"
 
 LANGUAGE_VERSIONS = {
     "python": "3.10.0",
+    "javascript": "18.15.0",
+    "typescript": "5.0.3",
     "java": "15.0.2",
     "cpp": "10.2.0",
     "c": "10.2.0",
@@ -164,7 +171,11 @@ class ExecuteCodeRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"status": "AcademiaAI Backend Running", "version": "1.0.0"}
+    return {
+        "status": "AcademiaAI Backend Running",
+        "version": "1.0.0",
+        "author": "Bhumit Goyal",
+    }
 
 
 @app.post("/api/generate")
@@ -184,7 +195,10 @@ async def generate_assessment(
         user_content = []
 
         if not client:
-            raise HTTPException(status_code=500, detail="OpenAI API key is missing or invalid on the server.")
+            raise HTTPException(
+                status_code=500,
+                detail="OpenAI API key is missing or invalid on the server.",
+            )
 
         # Build context string
         context = f"""
@@ -201,39 +215,37 @@ Generate comprehensive answers following the JSON schema exactly.
             filename = file.filename.lower()
 
             if filename.endswith(".pdf"):
-                # Extract text using PyPDF
                 pdf_reader = PdfReader(io.BytesIO(file_bytes))
                 text = ""
                 for page in pdf_reader.pages:
                     text += page.extract_text() + "\n"
                 user_content.append({
                     "type": "text",
-                    "text": f"ASSESSMENT CONTENT (extracted from PDF):\n\n{text}\n\n{context}"
+                    "text": f"ASSESSMENT CONTENT (extracted from PDF):\n\n{text}\n\n{context}",
                 })
 
             elif filename.endswith(".docx"):
-                # For DOCX, frontend should send extracted text
-                # Backend receives as text_content
                 user_content.append({
                     "type": "text",
-                    "text": f"ASSESSMENT CONTENT (extracted from DOCX):\n\n{text_content}\n\n{context}"
+                    "text": f"ASSESSMENT CONTENT (extracted from DOCX):\n\n{text_content}\n\n{context}",
                 })
 
             else:
-                # Plain text file
                 text = file_bytes.decode("utf-8", errors="replace")
                 user_content.append({
                     "type": "text",
-                    "text": f"ASSESSMENT CONTENT:\n\n{text}\n\n{context}"
+                    "text": f"ASSESSMENT CONTENT:\n\n{text}\n\n{context}",
                 })
 
         elif text_content:
             user_content.append({
                 "type": "text",
-                "text": f"ASSESSMENT CONTENT:\n\n{text_content}\n\n{context}"
+                "text": f"ASSESSMENT CONTENT:\n\n{text_content}\n\n{context}",
             })
         else:
-            raise HTTPException(status_code=400, detail="No assessment content provided")
+            raise HTTPException(
+                status_code=400, detail="No assessment content provided"
+            )
 
         messages.append({"role": "system", "content": SYSTEM_PROMPT})
         messages.append({"role": "user", "content": user_content})
@@ -243,47 +255,49 @@ Generate comprehensive answers following the JSON schema exactly.
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
 
         raw_text = response.choices[0].message.content.strip()
 
-        # Strip any accidental markdown fences (just in case)
-        raw_text = re.sub(r'^```json\s*', '', raw_text)
-        raw_text = re.sub(r'\s*```$', '', raw_text)
+        # Strip any accidental markdown fences
+        raw_text = re.sub(r"^```json\s*", "", raw_text)
+        raw_text = re.sub(r"\s*```$", "", raw_text)
         raw_text = raw_text.strip()
 
         result = json.loads(raw_text)
 
-        # Inject student info into metadata (override LLM extraction with form data)
+        # Inject student info into metadata
         if "metadata" not in result:
             result["metadata"] = {}
         result["metadata"]["student_name"] = student_name
         result["metadata"]["registration_number"] = registration_number
 
-        logger.info(f"Successfully generated {len(result.get('questions', []))} answers")
+        logger.info(
+            f"Successfully generated {len(result.get('questions', []))} answers"
+        )
         return JSONResponse(content=result)
 
     except json.JSONDecodeError as e:
         logger.error(f"JSON parse error: {e}\nRaw: {raw_text[:500]}")
-        raise HTTPException(status_code=500, detail=f"LLM returned malformed JSON: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"LLM returned malformed JSON: {str(e)}"
+        )
     except openai.OpenAIError as e:
-        import traceback
-        tb = traceback.format_exc()
-        logger.error(f"OpenAI API error: {e}\n{tb}")
-        raise HTTPException(status_code=500, detail=f"API error: {str(e)}. Cause: {str(e.__cause__) if e.__cause__ else 'unknown'}")
+        logger.error(f"OpenAI API error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"API error: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        logger.error(f"Unexpected error: {e}\n{tb}")
-        raise HTTPException(status_code=500, detail=f"{str(e)}. Cause: {str(e.__cause__) if e.__cause__ else 'unknown'}")
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/execute")
 async def execute_code(req: ExecuteCodeRequest):
     """
     Execute code via Piston API (real sandbox execution).
-    Supports Python, Java, C++, C, Octave (MATLAB substitute).
+    Supports Python, Java, C++, C, JavaScript, TypeScript, Octave.
     """
     lang = req.language.lower()
 
@@ -292,16 +306,30 @@ async def execute_code(req: ExecuteCodeRequest):
     version = LANGUAGE_VERSIONS.get(piston_lang, "*")
 
     if version is None:
-        return JSONResponse(content={
-            "stdout": "MATLAB execution not available. Showing expected output based on code analysis.",
-            "stderr": "",
-            "simulated": True
-        })
+        return JSONResponse(
+            content={
+                "stdout": "MATLAB execution not available. Showing expected output based on code analysis.",
+                "stderr": "",
+                "simulated": True,
+            }
+        )
+
+    ext_map = {
+        "python": "py",
+        "java": "java",
+        "cpp": "cpp",
+        "c": "c",
+        "javascript": "js",
+        "typescript": "ts",
+        "octave": "m",
+        "matlab": "m",
+    }
+    ext = ext_map.get(lang, "txt")
 
     payload = {
         "language": piston_lang,
         "version": version,
-        "files": [{"name": f"main.{'py' if lang=='python' else 'java' if lang=='java' else 'cpp' if lang=='cpp' else 'c' if lang=='c' else 'm'}", "content": req.code}],
+        "files": [{"name": f"main.{ext}", "content": req.code}],
         "stdin": req.stdin or "",
         "args": [],
         "compile_timeout": 30000,
@@ -323,18 +351,24 @@ async def execute_code(req: ExecuteCodeRequest):
             "exit_code": run.get("code", 0),
             "simulated": False,
             "language": piston_lang,
-            "version": data.get("language", {}).get("version", version) if isinstance(data.get("language"), dict) else version,
+            "version": (
+                data.get("language", {}).get("version", version)
+                if isinstance(data.get("language"), dict)
+                else version
+            ),
         }
         return JSONResponse(content=result)
 
     except httpx.HTTPError as e:
         logger.error(f"Piston API error: {e}")
-        return JSONResponse(content={
-            "stdout": "",
-            "stderr": f"Execution service unavailable: {str(e)}",
-            "exit_code": 1,
-            "simulated": False
-        })
+        return JSONResponse(
+            content={
+                "stdout": "",
+                "stderr": f"Execution service unavailable: {str(e)}",
+                "exit_code": 1,
+                "simulated": False,
+            }
+        )
 
 
 @app.post("/api/regenerate-answer")
@@ -353,7 +387,10 @@ async def regenerate_answer(
     }.get(tone, "standard")
 
     if not client:
-        raise HTTPException(status_code=500, detail="OpenAI API key is missing or invalid on the server.")
+        raise HTTPException(
+            status_code=500,
+            detail="OpenAI API key is missing or invalid on the server.",
+        )
 
     prompt = f"""
 Subject: {subject}
@@ -376,36 +413,19 @@ Return JSON for a SINGLE answer object matching this schema:
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt},
             ],
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
         raw = response.choices[0].message.content.strip()
-        raw = re.sub(r'^```json\s*', '', raw)
-        raw = re.sub(r'\s*```$', '', raw)
+        raw = re.sub(r"^```json\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
         return JSONResponse(content=json.loads(raw))
     except Exception as e:
+        logger.error(f"Regeneration error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/health")
 async def health():
-    return {"status": "healthy", "piston_api": PISTON_API}
-
-
-@app.get("/api/debug-openai")
-async def debug_openai():
-    """Debug endpoint to test OpenAI connectivity."""
-    import traceback
-    if not client:
-        return {"status": "error", "detail": "OpenAI client not initialized"}
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": "Say hello in 5 words."}],
-            max_tokens=20
-        )
-        return {"status": "ok", "response": response.choices[0].message.content}
-    except Exception as e:
-        tb = traceback.format_exc()
-        return {"status": "error", "detail": str(e), "cause": str(e.__cause__), "traceback": tb}
+    return {"status": "healthy", "piston_api": PISTON_API, "author": "Bhumit Goyal"}

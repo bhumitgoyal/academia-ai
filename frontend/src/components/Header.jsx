@@ -1,4 +1,4 @@
-import { GraduationCap, RotateCcw } from 'lucide-react'
+import { GraduationCap, RotateCcw, Github, Instagram, Linkedin } from 'lucide-react'
 
 export default function Header({ step, onReset }) {
   return (
@@ -12,7 +12,17 @@ export default function Header({ step, onReset }) {
             <h1 className="font-display text-xl font-bold text-parchment-50 tracking-tight">
               Academia<span className="text-gold-400">AI</span>
             </h1>
-            <p className="text-xs text-gray-500 font-body">Assessment Answer Generator</p>
+            <p className="text-xs text-gray-500 font-body">
+              by{' '}
+              <a
+                href="https://github.com/bhumitgoyal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-400/70 hover:text-gold-400 transition-colors"
+              >
+                Bhumit Goyal
+              </a>
+            </p>
           </div>
         </div>
 
@@ -35,12 +45,30 @@ export default function Header({ step, onReset }) {
           ))}
         </div>
 
-        {step === 'output' && (
-          <button onClick={onReset} className="btn-ghost flex items-center gap-2 text-sm">
-            <RotateCcw className="w-4 h-4" />
-            New Assessment
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Social links */}
+          <div className="hidden md:flex items-center gap-1.5">
+            <a href="https://github.com/bhumitgoyal" target="_blank" rel="noopener noreferrer"
+              className="p-2 text-gray-500 hover:text-gold-400 transition-colors rounded-lg hover:bg-gold-500/10">
+              <Github className="w-4 h-4" />
+            </a>
+            <a href="https://linkedin.com/in/bhumitgoyal" target="_blank" rel="noopener noreferrer"
+              className="p-2 text-gray-500 hover:text-gold-400 transition-colors rounded-lg hover:bg-gold-500/10">
+              <Linkedin className="w-4 h-4" />
+            </a>
+            <a href="https://instagram.com/bhumitgoyal" target="_blank" rel="noopener noreferrer"
+              className="p-2 text-gray-500 hover:text-gold-400 transition-colors rounded-lg hover:bg-gold-500/10">
+              <Instagram className="w-4 h-4" />
+            </a>
+          </div>
+
+          {step === 'output' && (
+            <button onClick={onReset} className="btn-ghost flex items-center gap-2 text-sm">
+              <RotateCcw className="w-4 h-4" />
+              New Assessment
+            </button>
+          )}
+        </div>
       </div>
     </header>
   )

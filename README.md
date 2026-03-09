@@ -1,19 +1,25 @@
 # 🎓 AcademiaAI — Assessment Answer Generator
 
+> **Built by [Bhumit Goyal](https://github.com/bhumitgoyal)** — AI-powered assessment answer generation for university students.
+
+[![GitHub](https://img.shields.io/badge/GitHub-bhumitgoyal-181717?logo=github)](https://github.com/bhumitgoyal)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-bhumitgoyal-0A66C2?logo=linkedin)](https://linkedin.com/in/bhumitgoyal)
+[![Instagram](https://img.shields.io/badge/Instagram-bhumitgoyal-E4405F?logo=instagram)](https://instagram.com/bhumitgoyal)
+
 A full-stack application that ingests university assessment papers (PDF, DOCX, or plain text) and generates professional, college-student-voice answer sheets with:
 
 - 📝 Structured text answers (academic voice, not AI-sounding)
 - 🧮 LaTeX math rendering + downloadable `.tex` source
-- 💻 Real code execution (Python, Java, C++, C) via Piston API
+- 💻 Real code execution (Python, Java, C++, C, JavaScript) via Piston API
 - 📊 Auto-generated UML diagrams (Mermaid.js, fully editable)
-- 🖨️ Browser print-to-PDF for the answer sheet
+- 🖨️ Browser PDF export for the answer sheet
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-assessment-maker/
+academia-ai/
 ├── backend/              # FastAPI (Python)
 │   ├── main.py           # All API routes
 │   ├── requirements.txt
@@ -28,7 +34,8 @@ assessment-maker/
     │   │   ├── AnswerSheetPreview.jsx  # Print-ready answer sheet
     │   │   ├── Terminal.jsx         # Real code execution display
     │   │   ├── UMLDiagram.jsx       # Mermaid renderer + editor
-    │   │   └── LaTeXViewer.jsx      # LaTeX viewer + download
+    │   │   ├── LaTeXViewer.jsx      # LaTeX viewer + download
+    │   │   └── PrintableUMLDiagram.jsx
     │   └── styles/globals.css
     ├── index.html
     ├── vite.config.js
@@ -43,7 +50,7 @@ assessment-maker/
 
 - Python 3.10+
 - Node.js 18+
-- An Anthropic API key → [console.anthropic.com](https://console.anthropic.com)
+- An OpenAI API key → [platform.openai.com](https://platform.openai.com)
 
 ---
 
@@ -61,7 +68,7 @@ pip install -r requirements.txt
 
 # Set up environment
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your OPENAI_API_KEY
 
 # Run the backend
 uvicorn main:app --reload --port 8000
@@ -95,7 +102,7 @@ Frontend will be running at `http://localhost:5173`
 # Build frontend
 cd frontend && npm run build
 
-# Serve with uvicorn (mount static files)
+# Serve with uvicorn
 cd backend && uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -105,7 +112,8 @@ cd backend && uvicorn main:app --host 0.0.0.0 --port 8000
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key (required) |
+| `OPENAI_API_KEY` | Your OpenAI API key (required) |
+| `FRONTEND_URL` | Frontend URL for CORS (optional, for deployment) |
 
 ---
 
@@ -125,7 +133,7 @@ cd backend && uvicorn main:app --host 0.0.0.0 --port 8000
 
 | Format | Handling |
 |--------|----------|
-| `.pdf` | Sent as base64 to Claude claude-opus-4-6 API |
+| `.pdf` | Text extracted server-side via PyPDF, sent to GPT-4o |
 | `.docx` | Parsed client-side with Mammoth.js, text sent to API |
 | `.txt` | Read as plain text |
 | Text box | Direct string injection |
@@ -147,7 +155,7 @@ cd backend && uvicorn main:app --host 0.0.0.0 --port 8000
 ### Change the AI model
 In `backend/main.py`:
 ```python
-model="claude-opus-4-6"  # Change to claude-sonnet-4-6 for faster/cheaper
+model="gpt-4o"  # Change to gpt-4o-mini for faster/cheaper
 ```
 
 ### Adjust answer verbosity
@@ -178,6 +186,16 @@ Piston supports 75+ languages — check: `https://emkc.org/api/v2/piston/runtime
 **DOCX not parsing** — Ensure Mammoth.js loaded (check browser console). Complex DOCX with embedded images may not parse perfectly.
 
 **KaTeX not rendering** — Ensure LaTeX delimiters are correct: `$$...$$` for display math, `$...$` for inline.
+
+---
+
+## 👤 Author
+
+**Bhumit Goyal**
+
+- GitHub: [@bhumitgoyal](https://github.com/bhumitgoyal)
+- LinkedIn: [bhumitgoyal](https://linkedin.com/in/bhumitgoyal)
+- Instagram: [@bhumitgoyal](https://instagram.com/bhumitgoyal)
 
 ---
 

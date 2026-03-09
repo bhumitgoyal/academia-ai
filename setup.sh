@@ -32,7 +32,7 @@ echo "  Installed Python dependencies"
 if [ ! -f ".env" ]; then
   cp .env.example .env
   echo ""
-  echo "⚠️  Created .env file. Please add your ANTHROPIC_API_KEY:"
+  echo "⚠️  Created .env file. Please add your OPENAI_API_KEY:"
   echo "   Edit: backend/.env"
   echo ""
 fi

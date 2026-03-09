@@ -33,7 +33,7 @@ export default function IntakeStep({ formData, setFormData, onGenerate }) {
       <div className="text-center space-y-4 pt-4 stagger-1 animate-fade-up">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500/10 border border-gold-500/20 rounded-full text-gold-400 text-sm">
           <Sparkles className="w-4 h-4" />
-          Powered by Claude claude-opus-4-6 + Real Code Execution
+          Powered by GPT-4o + Real Code Execution
         </div>
         <h2 className="font-display text-4xl md:text-5xl font-bold text-parchment-50 leading-tight">
           Upload Your Assessment.<br />
